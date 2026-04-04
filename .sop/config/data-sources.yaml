@@ -1,0 +1,336 @@
+# =============================================================================
+# 行业研究SOP v3.0 - 外部数据源标准配置表
+# =============================================================================
+# 架构说明：
+# - L1 通用层：所有行业适用的基础数据源
+# - L2 行业层：快消/茶饮行业专用数据源
+# - L3 自定义层：用户扩展接口（融合验证模式）
+#
+# 融合模式说明：
+# - merge: 数据融合（L3补充L1/L2，丰富数据维度）
+# - validate: 交叉验证（L3验证L1/L2数据的准确性）
+# - alert: 差异预警（L3与L1/L2数据冲突时告警，不覆盖）
+#
+# 核心原则：融合而非覆盖
+# - L3数据与L1/L2数据是"并行获取、智能比对、融合/冲突处理"关系
+# - 绝不使用"覆盖"逻辑
+# - 数据一致时提升置信度，数据冲突时触发预警并请求用户决策
+# =============================================================================
+version: "3.0.0"
+last_updated: "2026-04-03"
+sop_version: "行业研究SOP v3.0"
+data_sources:
+  - name: "国家统计局"
+    url: "https://www.stats.gov.cn"
+    layer: "L1"
+    dimensions:
+      - "宏观经济数据"
+      - "行业产值统计"
+      - "消费支出数据"
+      - "人口结构数据"
+      - "CPI/PPI指数"
+    search_strategy: |
+      访问国家统计局官网→数据查询→年度/月度数据→搜索目标行业关键词
+      →查找"规模以上工业企业主要指标"、"社会消费品零售总额"等表格
+      →提取时间序列数据，注意数据发布滞后性（通常延迟1-3个月）
+    expected_output: |
+      官方权威统计数据，包括行业总产值、增长率、企业数量、
+      从业人员等宏观指标，数据可信度等级：高
+    fallback: |
+      1. 使用省级统计局数据作为替代
+      2. 查阅《中国统计年鉴》PDF版本
+      3. 引用第三方机构对官方数据的整理版本（需标注转引来源）
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "validate"
+
+  - name: "企查查"
+    url: "https://www.qcc.com"
+    layer: "L1"
+    dimensions:
+      - "企业工商信息"
+      - "行业企业数量"
+      - "企业融资情况"
+      - "知识产权数据"
+      - "司法风险信息"
+    search_strategy: |
+      访问企查查→企业查询→输入目标品牌/企业名称→查看工商信息/股东结构
+      →行业分析模块→搜索目标品类→获取该领域企业数量、注册资本分布、
+      成立时间分布等结构化数据
+    expected_output: |
+      企业级微观数据，包括品牌所属公司背景、融资历程、
+      关联企业图谱、行业企业密度分析，数据可信度等级：中高
+    fallback: |
+      1. 切换至天眼查、启信宝等同类平台
+      2. 使用国家企业信用信息公示系统（基础信息免费）
+      3. 查阅上市公司年报中的行业概述章节
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "validate"
+
+  - name: "巨潮资讯"
+    url: "http://www.cninfo.com.cn"
+    layer: "L1"
+    dimensions:
+      - "上市公司财报"
+      - "行业经营数据"
+      - "市场份额数据"
+      - "产能产量数据"
+      - "渠道布局数据"
+    search_strategy: |
+      访问巨潮资讯→搜索目标行业上市公司（如农夫山泉、康师傅、统一）
+      →下载年度报告/半年度报告→查找"行业格局"、"主营业务分析"、
+      "市场地位"等章节→提取市场份额、营收结构、渠道占比等数据
+    expected_output: |
+      上市公司官方披露数据，包括营收、市场份额、渠道结构、
+      产能利用率等关键经营指标，数据可信度等级：高
+    fallback: |
+      1. 使用上海证券交易所/深圳证券交易所官网披露信息
+      2. 查阅东方财富网、同花顺等财经平台的财报摘要
+      3. 引用券商研报对上市公司数据的整理分析
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "validate"
+
+  - name: "百度指数"
+    url: "https://index.baidu.com"
+    layer: "L1"
+    dimensions:
+      - "搜索热度趋势"
+      - "用户兴趣分布"
+      - "地域分布特征"
+      - "人群画像数据"
+      - "需求图谱分析"
+    search_strategy: |
+      访问百度指数→输入目标品类关键词（如"无糖茶"、"功能性饮料"）
+      →查看搜索指数趋势（可自定义时间范围）→分析需求图谱→
+      查看人群画像（年龄/性别/地域分布）→导出数据或截图记录
+    expected_output: |
+      消费者搜索行为数据，反映品类关注度、季节性特征、
+      区域热度差异、目标人群画像，数据可信度等级：中
+    fallback: |
+      1. 使用微信指数作为替代（微信生态内热度）
+      2. 使用巨量算数（抖音生态内热度）
+      3. 使用Google Trends（海外市场）
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "merge"
+
+  - name: "微信指数"
+    url: "微信小程序：微信指数"
+    layer: "L1"
+    dimensions:
+      - "微信生态热度"
+      - "内容传播趋势"
+      - "品牌声量监测"
+      - "话题讨论度"
+      - "私域流量指标"
+    search_strategy: |
+      打开微信→搜索"微信指数"小程序→输入目标品类/品牌关键词
+      →查看指数趋势（7日/30日/90日）→对比多个关键词热度
+      →分析趋势变化节点（与营销事件关联）
+    expected_output: |
+      微信生态内的品牌/品类热度数据，反映社交媒体声量、
+      内容传播效果、用户讨论活跃度，数据可信度等级：中
+    fallback: |
+      1. 使用百度指数进行交叉验证
+      2. 使用微博指数（社交媒体热度）
+      3. 使用新榜等第三方社媒监测工具
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "merge"
+
+  - name: "欧睿国际"
+    url: "https://www.euromonitor.com"
+    layer: "L2"
+    dimensions:
+      - "全球市场规模"
+      - "品类市场份额"
+      - "消费趋势预测"
+      - "渠道结构分析"
+      - "品牌竞争格局"
+    search_strategy: |
+      访问欧睿国际官网→行业报告→选择Consumer Health/Soft Drinks品类
+      →选择China/Asia Pacific区域→购买或查阅公开摘要→
+      查找"Market Size"、"Competitive Landscape"、"Forecast"章节
+      →提取市场规模、CAGR、Top品牌份额等数据
+    expected_output: |
+      权威行业报告数据，包括全球及中国市场规模、增长率预测、
+      品牌市场份额排名、渠道结构分析，数据可信度等级：高
+    fallback: |
+      1. 查阅欧睿公开新闻稿/博客中的数据摘要
+      2. 使用引用欧睿数据的券商研报（需标注转引）
+      3. 使用尼尔森IQ数据作为替代
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "validate"
+
+  - name: "尼尔森IQ"
+    url: "https://nielseniq.com/global/zh"
+    layer: "L2"
+    dimensions:
+      - "零售监测数据"
+      - "渠道销售数据"
+      - "消费者购买行为"
+      - "价格监测数据"
+      - "促销效果分析"
+    search_strategy: |
+      访问尼尔森IQ官网→Insights→选择Consumer Goods品类→
+      查阅公开报告或新闻稿→搜索"China beverage"、"RTD tea"等关键词
+      →查找零售监测数据、渠道份额、消费者购买趋势等
+    expected_output: |
+      零售终端监测数据，包括渠道销售额、销量、市场份额、
+      消费者购买行为洞察，数据可信度等级：高
+    fallback: |
+      1. 使用马上赢情报站（国内零售数据替代）
+      2. 查阅引用尼尔森数据的行业媒体报道
+      3. 使用凯度消费者指数（Consumer Panel数据）
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "validate"
+
+  - name: "马上赢情报站"
+    url: "https://www.maxdata.com.cn"
+    layer: "L2"
+    dimensions:
+      - "线下零售数据"
+      - "品类销售排名"
+      - "价格带分布"
+      - "SKU监测数据"
+      - "区域市场数据"
+    search_strategy: |
+      访问马上赢情报站→行业洞察→选择饮料/茶饮料品类→
+      查看品类简报/品牌排名→下载数据报告→提取市场份额、
+      销售额增速、价格带分布、TOP SKU等数据
+    expected_output: |
+      中国线下零售监测数据，包括品牌份额、品类增速、
+      价格带结构、区域市场表现，数据可信度等级：中高
+    fallback: |
+      1. 使用尼尔森IQ零售监测数据
+      2. 使用欧睿国际渠道数据
+      3. 查阅券商研报中的线下渠道调研数据
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "validate"
+
+  - name: "艾瑞咨询"
+    url: "https://www.iresearch.com.cn"
+    layer: "L2"
+    dimensions:
+      - "互联网消费数据"
+      - "电商渠道数据"
+      - "消费者洞察"
+      - "营销趋势分析"
+      - "新消费品类研究"
+    search_strategy: |
+      访问艾瑞咨询官网→研究报告→选择消费/食品饮料行业→
+      搜索"无糖茶"、"功能性饮料"、"新茶饮"等关键词→
+      下载免费报告→查找市场规模、用户画像、消费趋势等章节
+    expected_output: |
+      互联网消费研究数据，包括电商销售数据、消费者行为洞察、
+      新消费趋势分析，数据可信度等级：中高
+    fallback: |
+      1. 使用易观分析同类报告
+      2. 使用巨量算数（抖音电商数据）
+      3. 使用魔镜市场情报（电商数据）
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "merge"
+
+  - name: "益普索"
+    url: "https://www.ipsos.com/zh-cn"
+    layer: "L2"
+    dimensions:
+      - "消费者态度研究"
+      - "品牌健康度追踪"
+      - "U&A研究数据"
+      - "概念测试数据"
+      - "广告效果评估"
+    search_strategy: |
+      访问益普索官网→Insights→选择Consumer Goods/Food & Beverage→
+      查阅公开报告或新闻稿→搜索"China consumer"、"beverage trends"等
+      →查找消费者态度、品牌认知、购买驱动因素等研究数据
+    expected_output: |
+      消费者研究数据，包括品牌认知度、购买意愿、
+      消费态度、广告效果等洞察，数据可信度等级：高
+    fallback: |
+      1. 使用凯度消费者指数（Consumer Panel）
+      2. 使用CTR媒介智讯（广告效果数据）
+      3. 使用品牌方公开的消费者调研数据
+    verified: true
+    verification_date: "2026-04-03"
+    fusion_mode: "merge"
+
+  - name: "L3_USER_CUSTOM"
+    url: "user_defined"
+    layer: "L3"
+    dimensions:
+      - "用户自定义维度1"
+      - "用户自定义维度2"
+    search_strategy: |
+      【用户配置说明】
+      1. 在L3层添加自定义数据源时，必须完整填写所有字段
+      2. search_strategy应描述具体的数据获取路径和方法
+      3. expected_output应明确数据格式和可信度评估
+      4. fallback必须提供至少2个替代方案
+    expected_output: |
+      【融合验证说明】
+      L3层数据与L1/L2层的关系（融合而非覆盖）：
+      - merge模式：L3数据补充到L1/L2数据集中，丰富数据维度
+      - validate模式：L3数据用于交叉验证L1/L2数据的准确性
+      - alert模式：当L3与L1/L2数据差异超过阈值时触发告警
+      重要：L3数据绝不应覆盖L1/L2数据，而是：
+      - 数据一致时：提升置信度（多源验证通过）
+      - 数据冲突时：触发预警，请求用户决策
+      - 数据互补时：合并扩展数据维度
+    fallback: |
+      【配置检查清单】
+      □ 数据源名称符合命名规范（避免与L1/L2重复）
+      □ URL可访问或已标注访问方式
+      □ dimensions至少包含2个数据维度
+      □ search_strategy包含具体可执行步骤
+      □ verified字段已更新验证状态
+      □ fusion_mode已根据数据用途正确设置（merge/validate/alert）
+    verified: false
+    verification_date: null
+    fusion_mode: "alert"
+
+fusion_rules:
+  description: "L3层与L1/L2层数据的融合验证规则（核心：融合而非覆盖）"
+  merge_mode:
+    description: "数据融合模式 - L3补充L1/L2"
+    trigger: "L3数据与L1/L2数据维度互补时"
+    action: "将L3数据合并到主数据集，标注数据来源，提升数据完整性"
+    example: "L3补充区域细分数据到L1的全国宏观数据"
+  validate_mode:
+    description: "交叉验证模式 - L3验证L1/L2"
+    trigger: "L3数据与L1/L2数据维度重叠时"
+    action: "对比数据差异，差异<5%标注'已验证'，差异>10%标记待核实"
+    example: "L3的电商数据验证L2的零售监测数据"
+  alert_mode:
+    description: "差异预警模式 - L3与L1/L2冲突"
+    trigger: "L3数据与L1/L2数据存在显著矛盾时（差异>10%）"
+    action: "生成数据冲突报告，提示人工核查，不自动覆盖"
+    example: "L3用户调研数据与L2行业报告数据趋势相反"
+
+credibility_levels:
+  high:
+    sources: ["国家统计局", "上市公司财报", "欧睿国际", "尼尔森IQ", "益普索"]
+    criteria: "官方发布、付费权威报告、审计数据"
+    usage: "可直接引用，优先使用"
+  medium_high:
+    sources: ["企查查", "马上赢情报站", "艾瑞咨询"]
+    criteria: "第三方专业机构、监测数据"
+    usage: "可引用，建议交叉验证"
+  medium:
+    sources: ["百度指数", "微信指数", "行业媒体报道"]
+    criteria: "趋势数据、社媒数据、公开报道"
+    usage: "辅助参考，需标注数据性质"
+
+usage_guide:
+  step_1: "根据研究维度选择对应层级的数据源"
+  step_2: "优先使用L1层数据作为基础框架"
+  step_3: "使用L2层数据补充行业深度洞察"
+  step_4: "如需扩展，按L3模板添加自定义数据源"
+  step_5: "执行融合验证，处理数据冲突"
+  step_6: "按可信度分级标注所有引用数据"

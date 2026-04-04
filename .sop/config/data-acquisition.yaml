@@ -1,0 +1,156 @@
+# =============================================================================
+# 行业研究SOP v3.0 - 数据获取配置
+# =============================================================================
+# 用途: 控制SOP的数据获取方式，支持热切换
+# 版本: v3.0
+# 更新日期: 2026-04-03
+#
+# 使用说明:
+# 1. 修改 primary 即可切换数据源，SOP文件无需改动
+# 2. 当前使用 Exa/Tavily，未来切换为自建数据源
+# 3. fallback 为降级方案，primary 不可用时自动切换
+# =============================================================================
+
+version: "3.0.0"
+last_updated: "2026-04-03"
+
+# =============================================================================
+# 数据源配置
+# =============================================================================
+
+data_source:
+  # 主数据源（修改此处即可切换）
+  # 可选值: exa | tavily | internal_api
+  primary: exa
+
+  # 降级数据源（primary不可用时自动切换）
+  fallback: tavily
+
+  # Exa 配置（当前使用）
+  exa:
+    type: search
+    search_type: auto
+    num_results: 10
+    contents:
+      highlights:
+        max_characters: 4000
+      summary: true
+      text: false
+
+  # Tavily 配置（降级使用）
+  tavily:
+    type: search
+    search_depth: advanced
+    max_results: 10
+    include_answer: true
+    include_raw_content: false
+
+  # 自建数据源配置（未来启用）
+  internal_api:
+    type: api
+    endpoint: "待配置"          # 技术人员填入实际端点
+    method: "POST"
+    auth_type: "bearer"         # 认证方式：bearer / api_key / none
+    auth_token: "待配置"         # 认证令牌
+    timeout: 30                 # 超时时间（秒）
+    query_format: "natural_language"  # 查询方式：natural_language
+    response_format: "json"     # 返回格式：json
+
+    # 预期返回格式（与技术人员对齐）
+    expected_response_schema:
+      query: "string - 原始查询"
+      answer: "string - 综合回答（整合多源后的分析性文本）"
+      metrics: "array - 结构化指标数据"
+      metrics_item:
+        name: "string - 指标名称"
+        value: "number - 数值"
+        unit: "string - 单位"
+        year: "string/int - 年份"
+        confidence: "string - 置信度（高/中/低）"
+      sources: "array - 数据来源列表"
+      sources_item:
+        name: "string - 来源名称"
+        type: "string - 来源类型"
+        url: "string - 链接"
+      notes: "string - 补充说明（口径、差异等）"
+
+# =============================================================================
+# 数据调用指令模板
+# =============================================================================
+# SOP中的【数据调用】指令将按以下模板生成查询
+# 占位符由AI在执行时替换为实际值
+
+query_templates:
+
+  # 市场规模
+  market_size:
+    description: "获取目标品类的市场规模历史数据及预测"
+    template: "获取{品类}在{地理范围}的市场规模历史数据（过去{年数}年）及预测（未来{年数}年），包含各年份数值、单位、增长率"
+
+  # 竞争格局
+  competition:
+    description: "获取目标品类的竞争格局数据"
+    template: "获取{品类}在{地理范围}的主要品牌市场份额排名、CR5/CR10数据、品牌梯队划分"
+
+  # 消费人群
+  consumer:
+    description: "获取目标品类的消费人群画像"
+    template: "获取{品类}在{地理范围}的消费人群画像，包含年龄分布、性别比例、收入水平、消费场景"
+
+  # 行业政策
+  policy:
+    description: "获取目标品类的行业政策与监管法规"
+    template: "获取{品类}在{地理范围}的行业政策、监管法规、国家标准、市场准入要求"
+
+  # 功能性成分
+  ingredient:
+    description: "获取功能性成分的市场数据"
+    template: "获取{成分}在{应用场景}的市场规模、增速、主要供应商、应用领域"
+
+  # 行业生命周期
+  lifecycle:
+    description: "获取判断行业生命周期阶段的相关数据"
+    template: "获取{品类}在{地理范围}的行业渗透率、品牌数量变化、增长率趋势，用于判断行业生命周期阶段"
+
+  # 价值链
+  value_chain:
+    description: "获取产业链各环节价值分配数据"
+    template: "获取{品类}产业链结构，包含上游原料、中游生产、下游渠道各环节的成本占比、利润分配、关键参与者"
+
+# =============================================================================
+# 切换指南
+# =============================================================================
+#
+# 当前状态:
+#   primary: exa
+#   数据获取方式: AI发送搜索查询 → Exa返回网页内容 → AI提取数据
+#
+# 切换步骤（技术人员执行）:
+#   1. 部署自建数据源API
+#   2. 填入 endpoint 和 auth_token
+#   3. 修改 primary: internal_api
+#   4. 测试验证
+#
+# 切换后状态:
+#   primary: internal_api
+#   数据获取方式: AI发送自然语言查询 → 数据源返回结构化JSON → AI直接使用
+#
+# SOP文件: 无需任何修改
+#
+# =============================================================================
+
+switch_guide:
+  current:
+    primary: exa
+    description: "AI搜索 → Exa返回网页 → AI提取数据"
+  
+  future:
+    primary: internal_api
+    description: "AI查询 → 数据源返回结构化JSON → AI直接使用"
+  
+  steps:
+    - "1. 部署自建数据源API"
+    - "2. 配置 endpoint 和 auth_token"
+    - "3. 修改 primary: internal_api"
+    - "4. 测试验证数据获取"
+    - "5. SOP无需修改，自动生效"
