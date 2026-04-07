@@ -1,0 +1,95 @@
+# Task 3 Interface Consistency QA Evidence
+
+日期：2026-04-07
+
+## 审阅文件
+- `交付文档/1.3-消费者研究SOP-v3.0.md`
+- `交付文档/1.1-行业研究SOP-v3.0.md`
+- `交付文档/1.2-竞争分析SOP-v3.0.md`
+
+## 检查 1：二元检查清单 vs P0/P1/P2 命名区分
+
+结果：PASS
+
+证据：
+- 1.3 第五章将“二元检查清单”明确限定为主轴选择评分用途：`5.1 主轴选择：二元检查清单（0/1）`，并注明“与第六章P0/P1/P2质量检查清单不同”（1.3:315-317）。
+- 1.3 第六章单独使用 `P0 / P1 / P2` 作为质量检查清单命名（1.3:427-451）。
+- 文档中不存在把 P0/P1/P2 用于主轴评分、或把“二元检查清单”用于交付质检的交叉命名。
+
+## 检查 2：JSON Schema vs 人群卡片字段 1:1 映射
+
+结果：PASS
+
+证据：
+- 人群卡片四层定义在 1.3 第四章给出：定义层 7 项、核心层 8 项、扩展层 5 项、决策层 7 项（1.3:168-171）。
+- JSON Schema 在 1.3 `4.4` 明确了 `segments[].definition / profile / decision_implications / evidence_confidence / downstream_handoff` 等结构（1.3:190-307）。
+- 附录 E 给出逐字段映射：
+  - 定义层 7 项 → `segment_id` / `segment_name` + `definition.*`（1.3:504-513）
+  - 核心层 8 项 + 扩展层 5 项 → `profile.*`（1.3:515-530）
+  - 决策层 7 项 → `decision_implications.*`（1.3:532-541）
+  - 附加字段单独标注，不混入四层卡片主字段（1.3:543-557）
+- `downstream_handoff` 的命名已统一为 `for_1_4_trend_analysis / for_1_5_opportunity_analysis / for_2_1_market_positioning`，与 `4.4` Schema 一致（1.3:289-305, 1.3:550）。
+
+说明：
+- “1:1 映射”按文档定义是“卡片概念字段 ↔ JSON Schema 字段”的 1:1，对象型字段允许聚合为一个卡片字段（1.3:552-557）。
+
+## 检查 3：1.1/1.2 输出 vs 1.3 输入接口一致性
+
+结果：PASS（通过显式归一化兼容）
+
+证据：
+- 1.1 正式输出包含：`行业生命周期阶段`、`KSFs`、`机会点与风险点`（1.1:576-583）。
+- 1.1 正文明确存在 PEST 中的“社会文化环境”，可作为 `social_cultural_signals` 的来源（1.1:264-268）。
+- 1.3 `9.1` 已新增“接口归一化说明”，明确：
+  - `social_cultural_signals` ← 1.1 PEST 社会文化环境归一化提取
+  - `ksfs / industry_lifecycle / opportunities_risks` ← 1.1 第九章正式输出
+  （1.3:571-572）
+- 1.2 正式/条件输出包含：
+  - `竞争机会清单`（1.2:677-690）
+  - `定位图数据`（1.2:682-683）
+  - `用户口碑洞察 C1`（1.2:692-699）
+- 1.3 `9.1` 已明确：
+  - `sentiment_available` ← 1.2 C1 是否可用
+  - `top_unmet_needs / competitive_whitespace / opportunity_ids` ← 1.2 竞争机会清单、市场空白点、定位图空白区域归一化提取
+  - `positioning_gaps` ← 1.2 定位图数据 + 竞品品牌定位画像归一化提取
+  - `top_switching_triggers` ← 优先取自 1.2 C1 的差评点/切换原因；无 C1 时保留空数组并标 unavailable
+  （1.3:573-574）
+
+结论：
+- 1.3 输入字段与 1.1/1.2 并非全部“原生同名直连”，但已被文档显式定义为“归一化提取/别名映射”，因此接口语义一致、无悬空字段。
+
+## 检查 4：下游交接 Schema 合理性（provisional）
+
+结果：PASS（provisional）
+
+证据：
+- `downstream_handoff` schema 已在 `4.4` 定义三组结构：
+  - 1.4：`segment_tensions_to_track / emerging_behaviors / cultural_signals_by_segment`
+  - 1.5：`underserved_segments / high_growth_segments / high_pain_low_solution_fit_segments / opportunity_hypotheses`
+  - 2.1：`priority_target_segments / core_value_drivers / positioning_tensions / proof_points_required`
+  （1.3:289-305）
+- `9.3 下游交接定义` 与 Schema 名称一致，并新增 provisional 声明：此处为前瞻性 Schema，在下游接口冻结前仅允许裁剪，不允许擅自扩展语义或引入新维度（1.3:586-592）。
+
+合理性判断：
+- 1.4 需要“趋势张力/行为变化/文化信号”类型数据，已覆盖。
+- 1.5 需要“未满足/高增长/高痛点低匹配/机会假设”类型数据，已覆盖。
+- 2.1 需要“目标人群优先级/价值驱动/定位张力/证明点”类型数据，已覆盖。
+
+## 变更控制核验
+
+结果：PASS
+
+证据：
+- 10 条查询模板仍保留（1.3:129）。
+- 5 层 JSON Schema 仍保留（1.3:190）。
+- 11 维度仍保留（1.3:359）。
+- P0/P1/P2 结构仍保留（1.3:427）。
+- 本次仅做接口说明、命名统一与边界规则补充；未改动设计决策，未引入新维度或新模板。
+
+## 总结
+
+Task 3 接口一致性检查通过。
+- 命名区分清晰
+- 卡片字段与 Schema 映射完整
+- 上游接口通过归一化说明实现一致
+- 下游交接 Schema 作为 provisional 前瞻设计合理
