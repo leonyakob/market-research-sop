@@ -1,0 +1,63 @@
+{
+  "active_plan": "/home/king/github/market-research-sop/.sisyphus/plans/update-agents-md-longterm-rules.md",
+  "started_at": "2026-04-10T12:07:29.092Z",
+  "session_ids": [
+    "ses_28990dd96ffeVoUajVP2Wp58Qy",
+    "ses_288b39cc9ffer0zBv5DlxXjXfZ",
+    "ses_288b39cabffeKxc1Hs8s2EINoI",
+    "ses_288b39cb3ffe6bfD47KKJfQ2Sy",
+    "ses_2883284cfffeD6jMZQaUqZOs87",
+    "ses_2882d6069ffeTmqwUlGgJIvD7g",
+    "ses_2882962c2ffezSNpPFQNxUaUVo",
+    "ses_2881f66ecffew6upJGJRyCrtgt",
+    "ses_2881ae8beffe5S1ckjh26W8x53",
+    "ses_2881ae8a5ffed49yTutHT1B4J8",
+    "ses_2881ae8adffebTsYDpRqLPeddE",
+    "ses_2881ae89cffeXlJx3AjO2YURn6",
+    "ses_2881729abffepPznljOXU3TXx8",
+    "ses_28816fb3effeVmBWy1X5x4BZkd",
+    "ses_288100692ffes2wJlIVO2tUxF8",
+    "ses_288106a78ffex2vektvPkXhWPj",
+    "ses_288103dfbffetZcX7Rr5fGpfeF",
+    "ses_288100681ffe0a010D5HRqmL6g",
+    "ses_287ff0983ffekoVxy31hS20VDr",
+    "ses_2853a369fffeq8FrAxcnB1n0X0",
+    "ses_2852f65ddffej1bP7zueS0YToa",
+    "ses_284f3a13effefQBHMFxpYEYuMT",
+    "ses_284f0534cffe5m5zhHyOzp4xVj",
+    "ses_284ed3d1affej3tThVqOIiTEAl",
+    "ses_284eba441ffefkQg3WScMX1h7R",
+    "ses_284e980fdffeiBblMkG0FxzuXK"
+  ],
+  "plan_name": "update-agents-md-longterm-rules",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "审核现有 AGENTS.md 中的旧版本规则",
+      "session_id": "ses_288b39cc9ffer0zBv5DlxXjXfZ",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-10T12:10:33.048Z"
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "起草新的 AGENTS.md 规则骨架",
+      "session_id": "ses_288943b09ffewRp74p7Ap30nZw",
+      "agent": "Sisyphus-Junior",
+      "category": "writing",
+      "updated_at": "2026-04-10T13:14:05.611Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**规则一致性审计** — `oracle`",
+      "session_id": "ses_2881ae8beffe5S1ckjh26W8x53",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-10T14:58:24.539Z"
+    }
+  }
+}
