@@ -1,0 +1,4 @@
+- Task 6 should treat `有效内容修改` as a closed, deterministic rule set, not a description.
+- Restore flow must mention Git / GitHub history lookup, restore to the current main file, and a required version-history append in the same rule set.
+- For edge cases, use pause-and-prompt language, not soft guidance.
+- When a user rejects the plan, stop the flow immediately and keep the current state unchanged.
