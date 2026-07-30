@@ -1,0 +1,219 @@
+# 品牌策划全案 SOP - 模块元数据索引
+# 用途：支持按需加载，减少上下文token消耗
+# 规则：AI必须先读取此索引，再根据任务需要精确加载具体模块内容
+
+project:
+  name: 品牌策划全案SOP
+  version: "3.0"
+  total_modules: 43
+  
+# ========== 模块元数据索引 ==========
+modules:
+  # 第一大模块：市场研究
+  "1.1":
+    name: 行业研究
+    type: 数据研究型
+    stage: 市场研究
+    file: "~/github/market-research-sop/交付文档/1.1-行业研究SOP.md"
+    upstream: []  # 无上游依赖
+    downstream: ["1.2", "1.3", "1.4", "1.5"]
+    # 可消费输出（下游模块可调用的数据）
+    outputs:
+      - id: industry_opportunities
+        name: 行业机会点与风险点
+        description: PEST分析中识别的机会与风险
+        consumers: ["1.5"]
+      - id: ksfs
+        name: 关键成功因素KSFs
+        description: 带优先级排序的行业KSFs清单
+        consumers: ["1.2", "1.5"]
+      - id: social_cultural_signals
+        name: 社会文化信号
+        description: PEST社会文化维度分析结果
+        consumers: ["1.3", "1.4"]
+      - id: market_size
+        name: 市场规模数据
+        description: 历史+预测的市场规模数据
+        consumers: ["1.2"]
+    # 按需加载章节（当其他模块需要时，只加载这些章节）
+    export_sections:
+      - "行业机会点与风险点"
+      - "关键成功因素KSFs"
+      - "PEST社会文化维度"
+      - "市场规模与增长"
+    
+  "1.2":
+    name: 竞争分析
+    type: 对比/判断型
+    stage: 市场研究
+    file: "~/github/market-research-sop/交付文档/1.2-竞争分析SOP.md"
+    upstream: ["1.1"]
+    downstream: ["1.5", "2.1", "2.3"]
+    outputs:
+      - id: competitive_opportunities
+        name: 竞争机会清单
+        description: 从竞争格局中识别的机会点
+        consumers: ["1.5"]
+      - id: positioning_map_gaps
+        name: 定位图空白区域
+        description: 感知图/定位图中的空白机会区域
+        consumers: ["1.5", "2.3"]
+      - id: strategic_groups
+        name: 战略群组结果
+        description: 竞争格局的战略群组划分
+        consumers: ["1.5"]
+      - id: competitive_dimensions
+        name: 竞争维度比较
+        description: 品牌在各维度的优劣势对比
+        consumers: ["2.3"]
+    export_sections:
+      - "竞争机会清单"
+      - "战略群组分析"
+      - "定位图/感知图"
+      - "竞争维度对标矩阵"
+    
+  "1.3":
+    name: 消费者研究
+    type: 数据研究型
+    stage: 市场研究
+    file: "~/github/market-research-sop/交付文档/1.3-消费者研究SOP.md"
+    upstream: ["1.1"]
+    downstream: ["1.5", "2.1", "2.2"]
+    outputs:
+      - id: underserved_segments
+        name:  underserved_segments
+        description: 需求未被充分满足的细分人群
+        consumers: ["1.5", "2.2"]
+      - id: high_growth_segments
+        name: 高增长人群
+        description: 增长潜力高的人群细分
+        consumers: ["1.5", "2.2"]
+      - id: high_pain_low_solution
+        name: 高痛点低满足人群
+        description: 痛点强度高但解决方案匹配度低的群体
+        consumers: ["1.5"]
+      - id: opportunity_hypotheses
+        name: 消费者机会假设
+        description: 基于消费者研究的机会假设清单
+        consumers: ["1.5", "2.1"]
+    export_sections:
+      - "细分人群画像"
+      - "需求图谱与痛点分析"
+      - "消费者机会假设"
+      - "人群增长潜力评估"
+    
+  "1.4":
+    name: 趋势分析
+    type: 数据研究型
+    stage: 市场研究
+    file: "~/github/market-research-sop/交付文档/1.4-趋势分析SOP.md"
+    upstream: ["1.1"]
+    downstream: ["1.5", "2.1", "2.3"]
+    outputs:
+      - id: trend_opportunity_areas
+        name: 趋势机会领域
+        description: 具有商业机会的趋势领域
+        consumers: ["1.5"]
+      - id: high_priority_trends
+        name: 高优先级趋势
+        description: 需要重点关注和响应的趋势
+        consumers: ["1.5", "2.1"]
+      - id: watchlist_opportunities
+        name: 观察清单机会项
+        description: 潜力待验证的趋势机会
+        consumers: ["1.5"]
+      - id: trend_risk_flags
+        name: 趋势风险标记
+        description: 可能对品牌不利的趋势信号
+        consumers: ["1.5"]
+    export_sections:
+      - "趋势机会领域"
+      - "高优先级趋势清单"
+      - "趋势观察清单"
+      - "趋势风险与对策"
+    
+  "1.5":
+    name: 机会分析
+    type: 对比/判断型
+    stage: 市场研究
+    file: "~/github/market-research-sop/交付文档/1.5-机会分析SOP.md"
+    upstream: ["1.1", "1.2", "1.3", "1.4"]
+    downstream: ["2.1", "2.2", "2.3"]
+    inputs:
+      - module: "1.1"
+        items: ["industry_opportunities", "ksfs", "social_cultural_signals"]
+      - module: "1.2"
+        items: ["competitive_opportunities", "positioning_map_gaps", "strategic_groups"]
+      - module: "1.3"
+        items: ["underserved_segments", "high_growth_segments", "high_pain_low_solution", "opportunity_hypotheses"]
+      - module: "1.4"
+        items: ["trend_opportunity_areas", "high_priority_trends", "watchlist_opportunities", "trend_risk_flags"]
+    outputs:
+      - id: priority_opportunities
+        name: 优先级机会清单
+        description: 经筛选排序后的正式机会
+        consumers: ["2.1", "2.2", "2.3"]
+      - id: opportunity_positioning_map
+        name: 机会-定位映射字段
+        description: 机会与品牌定位的对应关系
+        consumers: ["2.1"]
+      - id: target_audience_opportunity_matrix
+        name: 目标人群-机会匹配矩阵
+        description: 机会与目标人群的匹配关系
+        consumers: ["2.2"]
+      - id: differentiation_opportunities
+        name: 差异化机会方向
+        description: 可用于差异化的竞争空白点
+        consumers: ["2.3"]
+    export_sections:
+      - "机会池与筛选结果"
+      - "优先级机会清单"
+      - "机会-下游模块映射"
+      - "观察池与风险提示"
+
+# ========== 模块类型定义 ==========
+module_types:
+  数据研究型:
+    description: 以外部数据获取、分析、验证为主的模块
+    characteristics:
+      - 依赖外部数据源
+      - 输出为数据洞察
+      - 需要数据调用策略
+    
+  对比/判断型:
+    description: 以比较、筛选、判断、决策为主的模块
+    characteristics:
+      - 依赖上游模块输出
+      - 需要明确的判断框架
+      - 输出为决策依据
+
+# ========== 按需加载规则 ==========
+lazy_loading_rules:
+  # 规则1：设计新模块时，先读取索引，不立即读取上游完整文档
+  rule_1:
+    trigger: "设计新模块SOP"
+    action: "读取本索引 → 识别依赖 → 按需加载"
+    skip: "上游模块的完整文档内容"
+    
+  # 规则2：当前模块需要上游特定输出时
+  rule_2:
+    trigger: "需要上游模块的特定输出"
+    action: "根据索引中的export_sections加载对应章节"
+    skip: "上游模块的其他章节"
+    
+  # 规则3：跨模块验证时
+  rule_3:
+    trigger: "验证上游模块输出完整性"
+    action: "读取outputs定义 → 检查文件存在性 → 按需读取片段"
+    skip: "不读取完整文档内容"
+
+# ========== 索引使用指南 ==========
+usage_guide:
+  step_1: "AI收到'设计X模块SOP'的请求"
+  step_2: "首先读取本索引文件（module-index.yaml）"
+  step_3: "从索引中获取X模块的元数据：类型、上游依赖、下游输出"
+  step_4: "根据当前任务阶段决定加载策略："
+  step_5: "  - 如果处于'框架设计阶段' → 不加载上游完整文档，只依赖索引中的依赖关系"
+  step_6: "  - 如果处于'接口定义阶段' → 按需加载上游的export_sections"
+  step_7: "  - 如果处于'验证/测试阶段' → 按需加载具体章节进行验证"
+  step_8: "只在明确需要具体细节时，才读取完整上游文档"

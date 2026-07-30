@@ -1,0 +1,804 @@
+# 跨 Session 最小上下文模型 - Schema 草表
+# 版本：v1.0
+# 生成日期：2026-04-20
+# 基于：市场研究模块 1.1-1.5 实际结构分析
+
+# ========== 使用说明 ==========
+# 本 Schema 定义 4 类卡片结构，用于跨 Session 最小上下文继承
+# 每张卡片包含字段定义、必填/可选标记、来源定位
+# 字段来源格式：文件路径:行号范围
+
+# ========== Schema 总览 ==========
+# Card 1: Project State Card（项目状态卡）- 每个 Session 1 张
+# Card 2: Module Dependency Card（模块依赖卡）- 每个模块 1 张
+# Card 3: Output Interface Card（输出接口卡）- 每个模块 1 张
+# Card 4: Normalization Bridging Card（语义桥接卡）- 按需创建
+
+---
+
+# ========== Card 1: Project State Card ==========
+# 用途：当前 Session 的任务状态、进度、冻结决策
+# 创建时机：每个新 Session 开始时
+# 继承方式：由用户或 Prometheus 生成，写入 Session 上下文
+
+project_state_card:
+  schema_version: "1.0"
+  card_type: "project_state"
+  
+  fields:
+    # === 基础信息 ===
+    framework_file:
+      type: string
+      required: true
+      description: "全案框架文件路径"
+      example: "~/github/market-research-sop/交付文档/1-品牌策划全案SOP框架.md"
+      source: "AGENTS.md 或框架文件"
+    
+    completed_modules:
+      type: array[string]
+      required: true
+      description: "已完成模块列表"
+      example: ["1.1", "1.2", "1.3", "1.4", "1.5"]
+      source: "交付文档/目录文件列表"
+    
+    current_target_module:
+      type: string
+      required: true
+      description: "当前目标模块编号"
+      example: "2.1"
+      source: "用户输入"
+    
+    current_task_type:
+      type: string
+      required: true
+      enum: ["design_sop", "optimize_sop", "review_sop", "execute_project"]
+      description: "当前任务类型"
+      example: "design_sop"
+      source: "用户输入"
+    
+    current_phase:
+      type: string
+      required: true
+      enum: ["dependency_identification", "question_design", "sop_generation", "review", "validation"]
+      description: "当前阶段"
+      example: "question_design"
+      source: "Prometheus 判断"
+    
+    # === 冻结决策 ===
+    frozen_decisions:
+      type: array[string]
+      required: false
+      description: "已冻结、不可更改的决策"
+      examples:
+        - "市场研究模块采用数据研究型/对比判断型双模板体系"
+        - "跨模块衔接优先看接口，不优先读全文"
+      source: "历史 Session 共识"
+    
+    # === 会话约束 ===
+    do_not_repeat:
+      type: array[string]
+      required: false
+      description: "当前 Session 不应重复做的事"
+      examples:
+        - "不要重新确认全案框架顺序"
+        - "不要把任务误解为品牌项目执行"
+      source: "AGENTS.md + 历史 Session"
+    
+    # === 上下文摘要 ===
+    last_session_summary:
+      type: string
+      required: false
+      description: "上一轮 Session 核心结论（50字内）"
+      example: "1.5 机会分析已完成，确定了优先级机会清单，准备进入 2.1 品牌定位"
+      source: "上一轮 Session 结束时的 summary"
+
+---
+
+# ========== Card 2: Module Dependency Card ==========
+# 用途：定义模块的上下游依赖关系
+# 创建时机：模块完成时，或设计下游模块前
+# 每张卡片对应一个模块
+
+module_dependency_card:
+  schema_version: "1.0"
+  card_type: "module_dependency"
+  
+  fields:
+    # === 模块身份 ===
+    module:
+      type: string
+      required: true
+      description: "模块编号"
+      example: "2.1"
+      source: "框架文件"
+    
+    module_name:
+      type: string
+      required: true
+      description: "模块名称"
+      example: "品牌定位"
+      source: "框架文件"
+    
+    module_type:
+      type: string
+      required: true
+      enum: ["数据研究型", "对比/判断型", "双输入型", "战略判断型"]
+      description: "模块类型"
+      example: "双输入型"
+      source: "AGENTS.md 第12章输入分类规范"
+    
+    # === 上游依赖 ===
+    upstream:
+      type: array[object]
+      required: true
+      description: "上游依赖模块列表"
+      
+      upstream_item:
+        fields:
+          module:
+            type: string
+            required: true
+            example: "1.5"
+          relation:
+            type: string
+            required: true
+            enum: ["strong", "conditional", "contextual"]
+            description: "依赖关系强度"
+            source: "各模块 SOP 前置声明"
+          
+          relation_rationale:
+            type: string
+            required: true
+            description: "为什么有这个依赖"
+            example: "提供优先级机会清单、机会-定位映射方向"
+            source: "各模块 SOP 依赖关系表"
+          
+          required_consumables:
+            type: array[string]
+            required: true
+            description: "必须承接的上游输出对象 ID"
+            examples:
+              1.5_to_2.1: ["priority_opportunities", "opportunity_positioning_mapping"]
+              1.3_to_2.1: ["priority_target_segments", "core_value_drivers", "positioning_tensions"]
+              1.1_to_2.1: ["opportunities_risks", "industry_lifecycle"]
+            source: "各模块 SOP 第九章下游交接定义"
+          
+          read_level:
+            type: string
+            required: true
+            enum: ["L0", "L1", "L2"]
+            description: "最低读取层级要求"
+            rules:
+              L0: "只读依赖摘要（模块元数据）"
+              L1: "读取接口定义（输出接口卡）"
+              L2: "补读桥接/规则信息"
+            source: "根据字段分散程度判断"
+    
+    # === 下游消费者 ===
+    downstream:
+      type: array[string]
+      required: true
+      description: "哪些模块消费本模块输出"
+      examples:
+        1.5: ["2.1", "2.2", "2.3"]
+        1.3: ["1.4", "1.5", "2.1"]
+      source: "各模块 SOP 依赖关系表 + 输出接口卡"
+
+---
+
+# ========== Card 3: Output Interface Card ==========
+# 用途：精确定义模块输出什么、给谁、状态如何
+# 创建时机：模块完成时
+# 这是最关键的一张卡片，决定下游模块能承接什么
+
+output_interface_card:
+  schema_version: "1.0"
+  card_type: "output_interface"
+  
+  fields:
+    # === 模块身份 ===
+    module:
+      type: string
+      required: true
+      description: "模块编号"
+      example: "1.5"
+      source: "模块文件名"
+    
+    # === 正式输出（Canonical Outputs）===
+    formal_outputs:
+      type: array[object]
+      required: true
+      description: "正式输出对象列表（一定有）"
+      
+      formal_output_item:
+        fields:
+          output_id:
+            type: string
+            required: true
+            description: "输出对象 ID（机器可读）"
+            example: "validated_opportunities"
+            source: "SOP 第九章接口定义"
+          
+          output_name:
+            type: string
+            required: true
+            description: "输出对象名称（人类可读）"
+            example: "正式机会主表"
+            source: "SOP 第九章接口定义"
+          
+          consumers:
+            type: array[string]
+            required: true
+            description: "消费此输出的下游模块"
+            example: ["2.1", "2.2", "2.3"]
+            source: "SOP 第九章下游交接定义"
+          
+          status:
+            type: string
+            required: true
+            enum: ["canonical"]
+            description: "字段稳定性状态（正式输出恒为 canonical）"
+          
+          semantics:
+            type: string
+            required: true
+            description: "字段语义定义"
+            example: "经筛选与优先级排序后的正式机会对象"
+            source: "SOP 第九章接口定义或输出格式章节"
+          
+          schema_location:
+            type: string
+            required: false
+            description: "Schema 定义位置（如果有 JSON Schema）"
+            example: "1.5-机会分析SOP.md:808-820"
+            source: "SOP 第九章"
+    
+    # === 条件输出（Conditional Outputs）===
+    conditional_outputs:
+      type: array[object]
+      required: false
+      description: "条件输出对象列表（不一定有）"
+      
+      conditional_output_item:
+        fields:
+          output_id:
+            type: string
+            required: true
+            example: "conflict_register"
+          output_name:
+            type: string
+            required: true
+            example: "冲突登记表"
+          consumers:
+            type: array[string]
+            required: true
+            example: ["review_only"]
+          status:
+            type: string
+            required: true
+            enum: ["conditional"]
+          appears_when:
+            type: string
+            required: true
+            description: "触发条件"
+            example: "存在多源冲突"
+            source: "SOP 第九章条件输出说明"
+    
+    # === 观察/降级输出（Watch/Derived Outputs）===
+    watch_outputs:
+      type: array[object]
+      required: false
+      description: "观察池、派生、降级输出"
+      
+      watch_output_item:
+        fields:
+          output_id:
+            type: string
+            required: true
+            example: "opportunity_watchlist"
+          output_name:
+            type: string
+            required: true
+            example: "机会观察池"
+          status:
+            type: string
+            required: true
+            enum: ["derived", "watchlist", "provisional"]
+          semantics:
+            type: string
+            required: true
+            description: "与正式输出的区别"
+            example: "观察池，不等于正式机会输入"
+            source: "SOP 观察池管理规则章节"
+    
+    # === 接口元信息 ===
+    interface_meta:
+      type: object
+      required: true
+      description: "接口元信息"
+      
+      fields:
+        storage_path:
+          type: string
+          required: true
+          description: "输出存储路径"
+          example: "~/.sop/context/1.5-output.json"
+          source: "SOP 第九章接口定义"
+        
+        interface_definition_location:
+          type: string
+          required: true
+          description: "接口定义在 SOP 中的位置"
+          example: "1.5-机会分析SOP.md:796-941"
+          source: "SOP 文件章节位置"
+        
+        provisional_note:
+          type: string
+          required: false
+          description: "前瞻性接口说明（如果有）"
+          example: "以下字段为前瞻性下游交接 Schema..."
+          source: "SOP 第九章（如1.3有明确标注）"
+
+---
+
+# ========== Card 4: Normalization Bridging Card ==========
+# 用途：解决"字段语义分散定义"问题
+# 创建时机：当检测到 derived / normalized / conditional / provisional 字段时
+# 不是每个模块都需要，只在必要时创建
+
+normalization_bridging_card:
+  schema_version: "1.0"
+  card_type: "normalization_bridging"
+  
+  fields:
+    # === 模块身份 ===
+    module:
+      type: string
+      required: true
+      description: "下游模块编号（谁需要理解这个桥接）"
+      example: "1.3"
+      source: "依赖关系分析"
+    
+    # === 派生输入定义 ===
+    derived_inputs:
+      type: array[object]
+      required: true
+      description: "派生/归一化输入字段列表"
+      
+      derived_input_item:
+        fields:
+          field:
+            type: string
+            required: true
+            description: "字段名"
+            example: "social_cultural_signals"
+          
+          source_module:
+            type: string
+            required: true
+            description: "来源模块"
+            example: "1.1"
+          
+          source_type:
+            type: string
+            required: true
+            enum: ["native", "normalized", "derived", "conditional_normalized"]
+            description: "来源类型"
+            rules:
+              native: "原生接口字段，单点定义"
+              normalized: "正文提取后归一化，非原生接口字段"
+              derived: "派生计算得出"
+              conditional_normalized: "条件输出 + 归一化"
+          
+          authoritative_origin:
+            type: array[string]
+            required: true
+            description: "权威来源位置（可能有多个）"
+            examples:
+              social_cultural_signals:
+                - "1.1 正文 PEST 社会文化部分 (1.1-行业研究SOP.md:264-268)"
+                - "1.3 接口归一化说明 (1.3-消费者研究SOP.md:575-579)"
+              top_switching_triggers:
+                - "1.2 条件输出 C1 (1.2-竞争分析SOP.md:694-699)"
+                - "1.3 接口归一化说明 (1.3-消费者研究SOP.md:577-579)"
+          
+          fallback:
+            type: string
+            required: false
+            description: "降级处理规则"
+            example: "若C1不可用，返回空数组并标 unavailable"
+            source: "SOP 归一化说明"
+          
+          read_level_required:
+            type: string
+            required: true
+            enum: ["L1", "L2"]
+            description: "理解此字段需要的最低读取层级"
+            note: "normalized/conditional 字段通常需要 L2"
+    
+    # === 关键警告 ===
+    critical_warnings:
+      type: array[string]
+      required: false
+      description: "下游模块必须知道的风险提示"
+      examples:
+        - "此模块下游交接字段并非全部来自上游 formal outputs"
+        - "不可把 derived 字段误当作 canonical 原生字段"
+        - "以下字段为前瞻性下游交接 Schema，下游模块接口正式冻结前可做字段裁剪"
+      source: "SOP 归一化说明、provisional 标注"
+
+---
+
+# ========== 1.1-1.5 模块具体卡片实例 ==========
+# 以下部分展示每个模块实际生成的卡片内容
+
+modules:
+  # ========== 1.1 行业研究 ==========
+  "1.1":
+    module_dependency_card:
+      module: "1.1"
+      module_name: "行业研究"
+      module_type: "数据研究型"
+      upstream: []  # 无上游
+      downstream: ["1.2", "1.3", "1.4", "1.5", "2.1"]
+    
+    output_interface_card:
+      module: "1.1"
+      formal_outputs:
+        - output_id: "market_size_data"
+          output_name: "市场规模数据"
+          consumers: ["1.2", "2.1"]
+          status: "canonical"
+          semantics: "历史+预测市场规模时间序列"
+        - output_id: "industry_lifecycle"
+          output_name: "行业生命周期阶段"
+          consumers: ["1.2", "2.1"]
+          status: "canonical"
+          semantics: "行业所处生命周期阶段判断"
+        - output_id: "ksfs"
+          output_name: "关键成功因素"
+          consumers: ["1.2", "1.5", "4.1"]
+          status: "canonical"
+          semantics: "带优先级排序的KSFs清单"
+        - output_id: "opportunities_risks"
+          output_name: "机会点与风险点"
+          consumers: ["1.5", "2.1"]
+          status: "canonical"
+          semantics: "带数据支撑的机会与风险清单"
+        - output_id: "strategic_recommendations"
+          output_name: "战略建议选项"
+          consumers: ["2.1"]
+          status: "canonical"
+          semantics: "基于行业分析的战略建议"
+      conditional_outputs: []  # 1.1 无明确条件输出
+      watch_outputs: []
+      interface_meta:
+        storage_path: "~/.sop/context/1.1-output.json"
+        interface_definition_location: "1.1-行业研究SOP.md:568-593"
+    
+    # 注意：1.1 没有单独的 Bridging Card
+    # 但它的 social_cultural_signals 被 1.3 在下游标注为 normalized
+    # 这个信息记录在 1.3 的 Bridging Card 里
+
+  # ========== 1.2 竞争分析 ==========
+  "1.2":
+    module_dependency_card:
+      module: "1.2"
+      module_name: "竞争分析"
+      module_type: "对比/判断型"
+      upstream:
+        - module: "1.1"
+          relation: "strong"
+          relation_rationale: "需要1.1输出的市场规模数据、行业生命周期阶段、KSFs、机会风险"
+          required_consumables: ["market_size_data", "industry_lifecycle", "ksfs", "opportunities_risks"]
+          read_level: "L1"
+      downstream: ["1.3", "1.5", "2.1", "4.1", "渠道策略"]
+    
+    output_interface_card:
+      module: "1.2"
+      formal_outputs:
+        - output_id: "competitors"
+          output_name: "竞品集与入选依据"
+          consumers: ["1.5", "2.1", "4.1"]
+          status: "canonical"
+          semantics: "竞品画像完整信息"
+        - output_id: "strategic_groups"
+          output_name: "战略群组结果"
+          consumers: ["1.5", "2.1"]
+          status: "canonical"
+          semantics: "竞争格局的战略群组划分"
+        - output_id: "positioning_map_data"
+          output_name: "定位图数据"
+          consumers: ["1.5", "2.3"]
+          status: "canonical"
+          semantics: "感知图/定位图空白区域"
+        - output_id: "competitor_matrix"
+          output_name: "竞品对标矩阵"
+          consumers: ["1.5", "2.1", "4.1"]
+          status: "canonical"
+          semantics: "竞品在各维度优劣势对比"
+        - output_id: "competitive_opportunities"
+          output_name: "竞争机会清单"
+          consumers: ["1.5", "2.1"]
+          status: "canonical"
+          semantics: "从竞争格局识别的机会点"
+      conditional_outputs:
+        - output_id: "sentiment_insights"
+          output_name: "用户口碑洞察"
+          consumers: ["1.3", "2.1"]
+          status: "conditional"
+          appears_when: "C1条件满足，有足够用户评价数据"
+        - output_id: "supply_chain_signals"
+          output_name: "供应链能力信号"
+          consumers: ["4.1", "供应链策略"]
+          status: "conditional"
+          appears_when: "C2条件满足"
+        - output_id: "financial_signals"
+          output_name: "财务与资本信号"
+          consumers: ["1.5", "投资决策"]
+          status: "conditional"
+          appears_when: "C3条件满足"
+        - output_id: "competitive_dynamics"
+          output_name: "竞品动态监测点"
+          consumers: ["1.4", "1.5"]
+          status: "conditional"
+          appears_when: "C4条件满足"
+      interface_meta:
+        storage_path: "~/.sop/context/1.2-output.json"
+        interface_definition_location: "1.2-竞争分析SOP.md:667-758"
+
+  # ========== 1.3 消费者研究 ==========
+  "1.3":
+    module_dependency_card:
+      module: "1.3"
+      module_name: "消费者研究"
+      module_type: "数据研究型"
+      upstream:
+        - module: "1.1"
+          relation: "strong"
+          relation_rationale: "需要1.1输出的社会文化信号、KSFs、行业阶段"
+          required_consumables: ["social_cultural_signals", "ksfs", "industry_lifecycle"]
+          read_level: "L2"  # 因为 social_cultural_signals 是 normalized
+        - module: "1.2"
+          relation: "conditional"
+          relation_rationale: "需要1.2条件输出C1的口碑数据、竞争机会ID"
+          required_consumables: ["sentiment_insights", "competitive_opportunities"]
+          read_level: "L2"  # 因为 conditional 输出
+      downstream: ["1.4", "1.5", "2.1"]
+    
+    output_interface_card:
+      module: "1.3"
+      formal_outputs:
+        - output_id: "segmentation_metadata"
+          output_name: "细分元数据"
+          consumers: ["1.4", "1.5", "2.1"]
+          status: "canonical"
+          semantics: "人群细分方法论与参数"
+        - output_id: "evidence_inputs"
+          output_name: "证据输入摘要"
+          consumers: ["1.4", "1.5"]
+          status: "canonical"
+          semantics: "支持人群判断的证据链"
+        - output_id: "segments"
+          output_name: "细分人群数组"
+          consumers: ["1.5", "2.1", "产品策略"]
+          status: "canonical"
+          semantics: "3-5类人群完整画像（定义层+核心层+扩展层+决策层）"
+        - output_id: "segment_comparison"
+          output_name: "人群对比矩阵"
+          consumers: ["1.5", "2.1"]
+          status: "canonical"
+          semantics: "跨人群需求/场景/价格敏感度对比"
+        - output_id: "downstream_handoff"
+          output_name: "下游交接包"
+          consumers: ["1.4", "1.5", "2.1"]
+          status: "canonical"
+          semantics: "模块化交接数据结构"
+      conditional_outputs: []
+      watch_outputs: []
+      interface_meta:
+        storage_path: "~/.sop/context/1.3-output.json"
+        interface_definition_location: "1.3-消费者研究SOP.md:565-605"
+        provisional_note: "以下字段为前瞻性下游交接 Schema..."
+    
+    # 1.3 有 Bridging Card，因为它消费了 normalized 字段
+    normalization_bridging_card:
+      module: "1.3"
+      derived_inputs:
+        - field: "social_cultural_signals"
+          source_module: "1.1"
+          source_type: "normalized"
+          authoritative_origin:
+            - "1.1 正文 PEST 社会文化部分 (1.1-行业研究SOP.md:264-268)"
+            - "1.3 接口归一化说明 (1.3-消费者研究SOP.md:575-579)"
+          read_level_required: "L2"
+        - field: "top_switching_triggers"
+          source_module: "1.2"
+          source_type: "conditional_normalized"
+          authoritative_origin:
+            - "1.2 条件输出 C1 (1.2-竞争分析SOP.md:694-699)"
+            - "1.3 接口归一化说明 (1.3-消费者研究SOP.md:577-579)"
+          fallback: "若C1不可用，返回空数组并标 unavailable"
+          read_level_required: "L2"
+      critical_warnings:
+        - "此模块下游交接字段并非全部来自上游 formal outputs"
+        - "不可把 derived 字段误当作 canonical 原生字段"
+
+  # ========== 1.4 趋势分析 ==========
+  "1.4":
+    module_dependency_card:
+      module: "1.4"
+      module_name: "趋势分析"
+      module_type: "数据研究型"
+      upstream:
+        - module: "1.1"
+          relation: "strong"
+          relation_rationale: "需要1.1输出的PEST社会文化信号作为趋势输入"
+          required_consumables: ["social_cultural_signals"]
+          read_level: "L2"
+        - module: "1.2"
+          relation: "conditional"
+          relation_rationale: "需要1.2条件输出C4的动态监测"
+          required_consumables: ["competitive_dynamics"]
+          read_level: "L2"
+        - module: "1.3"
+          relation: "strong"
+          relation_rationale: "需要1.3输出的下游交接包"
+          required_consumables: ["downstream_handoff.for_1_4_trend_analysis"]
+          read_level: "L1"
+      downstream: ["1.5", "2.1", "2.3", "5.2", "5.3"]
+    
+    output_interface_card:
+      module: "1.4"
+      formal_outputs:
+        - output_id: "candidate_objects"
+          output_name: "趋势候选对象列表"
+          consumers: ["internal"]
+          status: "canonical"
+          semantics: "趋势信号候选池"
+        - output_id: "validated_trends"
+          output_name: "正式趋势主表"
+          consumers: ["1.5", "2.1", "2.3", "5.2", "5.3"]
+          status: "canonical"
+          semantics: "经有效性验证的正式趋势（短期+中期）"
+        - output_id: "long_term_watchlist"
+          output_name: "长期观察池"
+          consumers: ["1.5", "2.x"]
+          status: "canonical"
+          semantics: "潜力待验证的长期趋势"
+        - output_id: "downstream_handoff"
+          output_name: "下游交接包"
+          consumers: ["1.5", "2.x"]
+          status: "canonical"
+          semantics: "模块化交接数据结构"
+      conditional_outputs:
+        - output_id: "conflict_register"
+          output_name: "冲突登记表"
+          consumers: ["review_only"]
+          status: "conditional"
+          appears_when: "存在多源冲突"
+        - output_id: "evidence_gap_register"
+          output_name: "证据缺口登记表"
+          consumers: ["follow_up"]
+          status: "conditional"
+          appears_when: "关键证据不完整"
+        - output_id: "channel_content_signals"
+          output_name: "渠道/内容信号包"
+          consumers: ["5.2", "5.3"]
+          status: "conditional"
+          appears_when: "C3条件满足"
+      interface_meta:
+        storage_path: "~/.sop/context/1.4-output.json"
+        interface_definition_location: "1.4-趋势分析SOP.md:612-728"
+
+  # ========== 1.5 机会分析 ==========
+  "1.5":
+    module_dependency_card:
+      module: "1.5"
+      module_name: "机会分析"
+      module_type: "对比/判断型"
+      upstream:
+        - module: "1.1"
+          relation: "strong"
+          relation_rationale: "提供行业机会点与风险点、KSFs、社会文化信号"
+          required_consumables: ["industry_opportunities", "ksfs", "social_cultural_signals"]
+          read_level: "L2"  # social_cultural_signals 需要 L2
+        - module: "1.2"
+          relation: "strong"
+          relation_rationale: "提供竞争机会清单、定位图空白区域、战略群组结果"
+          required_consumables: ["competitive_opportunities", "positioning_map_gaps", "strategic_groups"]
+          read_level: "L1"
+        - module: "1.3"
+          relation: "strong"
+          relation_rationale: "提供消费者机会假设、细分人群"
+          required_consumables: ["underserved_segments", "high_growth_segments", "high_pain_low_solution", "opportunity_hypotheses"]
+          read_level: "L1"
+        - module: "1.4"
+          relation: "strong"
+          relation_rationale: "提供趋势机会领域、高优先级趋势、观察池机会项、趋势风险标记"
+          required_consumables: ["trend_opportunity_areas", "high_priority_trends", "watchlist_items", "trend_risk_flags"]
+          read_level: "L1"
+      downstream: ["2.1", "2.2", "2.3"]
+    
+    output_interface_card:
+      module: "1.5"
+      formal_outputs:
+        - output_id: "candidate_opportunities"
+          output_name: "机会候选对象列表"
+          consumers: ["internal"]
+          status: "canonical"
+        - output_id: "screening_results"
+          output_name: "机会筛选结果表"
+          consumers: ["internal"]
+          status: "canonical"
+        - output_id: "validated_opportunities"
+          output_name: "正式机会主表"
+          consumers: ["2.1", "2.2", "2.3"]
+          status: "canonical"
+          semantics: "经筛选与优先级排序后的正式机会对象"
+        - output_id: "opportunity_watchlist"
+          output_name: "观察池"
+          consumers: ["2.x"]
+          status: "derived"
+          semantics: "潜力待验证的机会项"
+        - output_id: "downstream_handoff"
+          output_name: "下游交接包"
+          consumers: ["2.1", "2.2", "2.3"]
+          status: "canonical"
+          semantics: "模块化交接数据结构（for_2.1/for_2.2/for_2.3）"
+      conditional_outputs:
+        - output_id: "conflict_register"
+          output_name: "冲突登记表"
+          consumers: ["review_only"]
+          status: "conditional"
+        - output_id: "evidence_gap_register"
+          output_name: "证据缺口登记表"
+          consumers: ["follow_up"]
+          status: "conditional"
+      interface_meta:
+        storage_path: "~/.sop/context/1.5-output.json"
+        interface_definition_location: "1.5-机会分析SOP.md:796-941"
+
+---
+
+# ========== Schema 使用指南 ==========
+
+usage_guide:
+  when_to_create_project_state:
+    trigger: "每个新 Session 开始时"
+    created_by: "Prometheus 或用户"
+    contains: "当前任务状态、冻结决策、不重复项"
+  
+  when_to_create_module_dependency:
+    trigger: "模块完成时，或设计下游模块前"
+    created_by: "Prometheus 根据 SOP 自动生成"
+    contains: "上下游模块、关系类型、必须承接的输出、读取层级"
+  
+  when_to_create_output_interface:
+    trigger: "模块完成时"
+    created_by: "Prometheus 根据 SOP 第九章自动生成"
+    contains: "正式输出、条件输出、观察输出、接口元信息"
+  
+  when_to_create_normalization_bridging:
+    trigger: "检测到 derived / normalized / conditional / provisional 字段时"
+    created_by: "Prometheus 根据分析自动生成"
+    contains: "派生字段定义、权威来源、降级规则、关键警告"
+  
+  read_level_protocol:
+    L0: "只读模块元数据（适合快速依赖识别）"
+    L1: "读取接口定义（适合问题设计）"
+    L2: "补读桥接/规则信息（适合接口契约设计）"
+  
+  stability_assurance:
+    - "Project State Card 保证任务上下文一致"
+    - "Module Dependency Card 保证依赖关系一致"
+    - "Output Interface Card 保证接口理解一致"
+    - "Normalization Bridging Card 保证语义理解一致"
+    - "Read Level Protocol 保证读取深度可控"
+
+# ========== 版本历史 ==========
+
+version_history:
+  - version: "1.0"
+    date: "2026-04-20"
+    changes: "初始版本，基于 1.1-1.5 实际结构分析"
