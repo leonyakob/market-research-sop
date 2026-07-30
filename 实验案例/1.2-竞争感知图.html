@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扩香器+香氛精油 竞争感知图</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdfbf7;
+            --text-main: #2c302e;
+            --text-muted: #737774;
+            --grid-line: rgba(44, 48, 46, 0.08);
+            --c-sage: #8da399;
+            --c-terra: #c47b67;
+            --c-gold: #d4af37;
+            --c-charcoal: #3b423f;
+            --c-sand: #e6dcc8;
+            --c-target: #205c69;
+            --c-zone1: rgba(200, 121, 101, 0.12);
+            --c-zone2: rgba(141, 163, 153, 0.15);
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Lato', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(var(--c-sand) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: var(--text-main);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+        header { text-align: center; margin-bottom: 50px; animation: fadeInDown 1s ease-out; }
+        h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+        .subtitle { font-size: 1.1rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 4 / 3;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.03), inset 0 0 0 1px rgba(255,255,255,0.6);
+            backdrop-filter: blur(10px);
+            padding: 60px;
+            margin-bottom: 40px;
+            animation: fadeIn 1.2s ease-out 0.2s both;
+        }
+        .grid {
+            position: absolute;
+            top: 60px; left: 60px; right: 60px; bottom: 60px;
+            border-left: 2px solid var(--text-muted);
+            border-bottom: 2px solid var(--text-muted);
+        }
+        .grid-line-x, .grid-line-y { position: absolute; background: var(--grid-line); }
+        .grid-line-x { top: 0; bottom: 0; width: 1px; }
+        .grid-line-y { left: 0; right: 0; height: 1px; }
+        .axis-label {
+            position: absolute;
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        .axis-x-label { bottom: -45px; right: 0; }
+        .axis-y-label { top: -10px; left: -45px; writing-mode: vertical-rl; transform: rotate(180deg); }
+        .quad-label {
+            position: absolute;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            opacity: 0.6;
+            letter-spacing: 1px;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+        .quad-tl { top: 20px; left: 20px; }
+        .quad-tr { top: 20px; right: 20px; text-align: right; }
+        .quad-bl { bottom: 20px; left: 20px; }
+        .quad-br { bottom: 20px; right: 20px; text-align: right; }
+        .zone {
+            position: absolute;
+            border-radius: 12px;
+            border: 1px dashed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            opacity: 0;
+            animation: fadeIn 1s ease-out 1s both;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+        .zone:hover { background-color: rgba(255,255,255,0.4) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+        .zone-1 { left: 50%; bottom: 50%; width: 25%; height: 25%; background: var(--c-zone1); border-color: rgba(200, 121, 101, 0.4); }
+        .zone-2 { left: 25%; bottom: 75%; width: 25%; height: 25%; background: var(--c-zone2); border-color: rgba(141, 163, 153, 0.4); }
+        .dot {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, 50%);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+            opacity: 0;
+            z-index: 10;
+        }
+        .dot.loaded { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .dot:hover { transform: translate(-50%, 50%) scale(1.3); box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 20; }
+        .dot-label {
+            position: absolute;
+            top: -28px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            pointer-events: none;
+            background: rgba(255,255,255,0.85);
+            padding: 3px 8px;
+            border-radius: 6px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .dot-doterra { left: 72.5%; bottom: 97.5%; width: 28px; height: 28px; background: var(--c-charcoal); animation-delay: 1.2s; }
+        .dot-yl { left: 77.5%; bottom: 95%; width: 26px; height: 26px; background: var(--c-sage); animation-delay: 1.3s; }
+        .dot-tosummer { left: 75%; bottom: 50%; width: 22px; height: 22px; background: var(--c-terra); animation-delay: 1.4s; }
+        .dot-documents { left: 100%; bottom: 55%; width: 18px; height: 18px; background: var(--text-main); animation-delay: 1.5s; }
+        .dot-beast { left: 50%; bottom: 25%; width: 24px; height: 24px; background: var(--c-gold); animation-delay: 1.6s; }
+        .dot-muji { left: 25%; bottom: 30%; width: 24px; height: 24px; background: #9fa4a1; animation-delay: 1.7s; }
+        .dot-generic { left: 0%; bottom: 0%; width: 32px; height: 32px; background: #dcd7d0; animation-delay: 1.8s; }
+        .dot-target {
+            left: 62.5%; bottom: 62.5%;
+            width: 24px; height: 24px;
+            background: var(--c-target);
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            border-radius: 0;
+            box-shadow: none;
+            filter: drop-shadow(0 0 8px rgba(32, 92, 105, 0.6));
+            animation-delay: 2s;
+            z-index: 15;
+        }
+        .dot-target::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 45px; height: 45px;
+            background: transparent;
+            border: 1px dashed var(--c-target);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulseRotate 6s linear infinite;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 15px 20px;
+            width: 260px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.8);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+        .tooltip.visible { opacity: 1; transform: translateY(0); }
+        .tt-title { font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 12px; color: var(--text-main); font-weight: 600; border-bottom: 1px solid var(--grid-line); padding-bottom: 8px; }
+        .tt-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem; }
+        .tt-label { color: var(--text-muted); }
+        .tt-val { font-weight: 700; color: var(--text-main); }
+        .tt-desc { margin-top: 12px; font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); background: var(--bg-color); padding: 10px; border-radius: 8px; }
+        .tt-desc strong { color: var(--text-main); display: block; margin-bottom: 2px; }
+        .tt-desc .weak { margin-top: 8px; }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 20px;
+            animation: fadeIn 1s ease-out 1.5s both;
+            max-width: 800px;
+            background: rgba(255,255,255,0.6);
+            padding: 15px 30px;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+        }
+        .legend-item { display: flex; align-items: center; font-size: 0.9rem; color: var(--text-main); font-weight: 500; }
+        .legend-color { width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; }
+        .legend-target { width: 16px; height: 16px; background: var(--c-target); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); margin-right: 8px; }
+        .legend-zone { width: 20px; height: 14px; border: 1px dashed var(--c-sage); background: var(--c-zone2); border-radius: 4px; margin-right: 8px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn {
+            0% { opacity: 0; transform: translate(-50%, 50%) scale(0); }
+            80% { transform: translate(-50%, 50%) scale(1.15); }
+            100% { opacity: 1; transform: translate(-50%, 50%) scale(1); }
+        }
+        @keyframes pulseRotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) rotate(180deg) scale(1.3); opacity: 0.1; }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); opacity: 0.8; }
+        }
+        @media (max-width: 768px) {
+            .chart-container { padding: 40px 20px; aspect-ratio: 1; }
+            .grid { top: 40px; left: 40px; right: 20px; bottom: 40px; }
+            h1 { font-size: 1.8rem; }
+            .axis-label { font-size: 0.85rem; }
+            .legend { padding: 15px; flex-direction: column; gap: 10px; border-radius: 15px; }
+            .zone { font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>扩香器+香氛精油 竞争感知图</h1>
+        <div class="subtitle">价格 × 专业度定位映射</div>
+    </header>
+    <div class="chart-container">
+        <div class="grid">
+            <div class="grid-line-x" style="left: 25%"></div>
+            <div class="grid-line-x" style="left: 50%"></div>
+            <div class="grid-line-x" style="left: 75%"></div>
+            <div class="grid-line-y" style="bottom: 25%"></div>
+            <div class="grid-line-y" style="bottom: 50%"></div>
+            <div class="grid-line-y" style="bottom: 75%"></div>
+            <div class="axis-label axis-x-label">价格 (Price) → 高</div>
+            <div class="axis-label axis-y-label">专业芳疗 (Professional) →</div>
+            <div class="quad-label quad-tl">平价专业区<br>(低价/高专业)</div>
+            <div class="quad-label quad-tr">高奢疗愈区<br>(高价/高专业)</div>
+            <div class="quad-label quad-bl">大众消费区<br>(低价/生活美学)</div>
+            <div class="quad-label quad-br">高端生活区<br>(高价/生活美学)</div>
+            <div class="zone zone-1">空白区一<br>精致扩香+功能精油套装</div>
+            <div class="zone zone-2">空白区二<br>平价专业芳疗</div>
+            <div class="dot dot-generic" data-info='{"title":"白牌/代工", "price":"低 (1.0)", "pos":"无特色 (1.0)", "str":"极致低价，走量为主", "weak":"无品牌溢价，产品质量与安全性参差不齐"}'>
+                <div class="dot-label">白牌/代工</div>
+            </div>
+            <div class="dot dot-muji" data-info='{"title":"Muji无印良品", "price":"中低 (2.0)", "pos":"生活美学 (2.0)", "str":"极简设计深入人心，基础单方精油覆盖广，性价比高", "weak":"扩香器功能单一，精油缺乏深度芳疗复方配方"}'>
+                <div class="dot-label">Muji</div>
+            </div>
+            <div class="dot dot-beast" data-info='{"title":"野兽派THE BEAST", "price":"中端 (3.0)", "pos":"生活美学 (2.0)", "str":"高颜值送礼属性，营销与联名能力强，器皿设计感好", "weak":"香精感较重，缺乏植物疗愈与专业芳疗背书"}'>
+                <div class="dot-label">野兽派</div>
+            </div>
+            <div class="dot dot-tosummer" data-info='{"title":"观夏to Summer", "price":"高端 (4.0)", "pos":"东方美学 (3.0)", "str":"东方植物香哲学，器皿极具艺术感，情绪价值拉满", "weak":"重嗅觉体验，专业芳疗功能与机理属性较弱"}'>
+                <div class="dot-label" style="top:25px">观夏</div>
+            </div>
+            <div class="dot dot-documents" data-info='{"title":"闻献DOCUMENTS", "price":"极高 (5.0)", "pos":"先锋美学 (3.0)", "str":"前卫设计，极具品牌辨识度和稀缺性，高奢定位", "weak":"受众极窄，客单价极高，不具备普适功能性"}'>
+                <div class="dot-label" style="left:-15px">闻献</div>
+            </div>
+            <div class="dot dot-yl" data-info='{"title":"Young Living", "price":"高端 (4.0)", "pos":"专业芳疗 (5.0)", "str":"自有农场，精油纯度极高，全球芳疗权威背书", "weak":"直销模式国内接受度低，扩香器设计过于传统"}'>
+                <div class="dot-label">Young Living</div>
+            </div>
+            <div class="dot dot-doterra" data-info='{"title":"doTERRA多特瑞", "price":"高端 (4.0)", "pos":"专业芳疗 (5.0)", "str":"CPTG认证标准，线下体验与教育体系极其庞大", "weak":"受直销模式限制，重精油轻器皿设计，缺乏现代审美"}'>
+                <div class="dot-label" style="top:25px">doTERRA</div>
+            </div>
+            <div class="dot dot-target" data-info='{"title":"我方目标机会区", "price":"中高端 (3.5)", "pos":"美学与专业融合 (3.5)", "str":"兼具现代家居艺术感与专业芳疗功效的软硬一体组合", "weak":"需要同时解决强大的上游供应链与高端品牌心智背书"}'>
+                <div class="dot-label" style="top:-32px; color:var(--c-target)">我方目标</div>
+            </div>
+        </div>
+    </div>
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background:var(--c-charcoal)"></div>专业芳疗巨头</div>
+        <div class="legend-item"><div class="legend-color" style="background:var(--c-terra)"></div>高端香氛美学</div>
+        <div class="legend-item"><div class="legend-color" style="background:var(--c-gold)"></div>大众生活美学</div>
+        <div class="legend-item"><div class="legend-color" style="background:#dcd7d0"></div>低端白牌</div>
+        <div class="legend-item"><div class="legend-target"></div>我方战略切入点</div>
+        <div class="legend-item"><div class="legend-zone"></div>核心市场空白区</div>
+    </div>
+    <div class="tooltip" id="tooltip">
+        <div class="tt-title" id="tt-title">Brand</div>
+        <div class="tt-row"><span class="tt-label">价格定位:</span><span class="tt-val" id="tt-price">High</span></div>
+        <div class="tt-row"><span class="tt-label">专业属性:</span><span class="tt-val" id="tt-pos">Pro</span></div>
+        <div class="tt-desc">
+            <strong>核心优势</strong> <span id="tt-str">...</span>
+            <div class="weak"><strong>主要劣势</strong> <span id="tt-weak">...</span></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dots = document.querySelectorAll('.dot');
+            const tooltip = document.getElementById('tooltip');
+            setTimeout(() => { dots.forEach(dot => dot.classList.add('loaded')); }, 100);
+            dots.forEach(dot => {
+                dot.addEventListener('mouseenter', (e) => {
+                    const info = JSON.parse(dot.getAttribute('data-info'));
+                    document.getElementById('tt-title').textContent = info.title;
+                    document.getElementById('tt-price').textContent = info.price;
+                    document.getElementById('tt-pos').textContent = info.pos;
+                    document.getElementById('tt-str').textContent = info.str;
+                    document.getElementById('tt-weak').textContent = info.weak;
+                    tooltip.classList.add('visible');
+                    positionTooltip(dot, tooltip);
+                });
+                dot.addEventListener('mousemove', (e) => { positionTooltip(dot, tooltip); });
+                dot.addEventListener('mouseleave', () => { tooltip.classList.remove('visible'); });
+            });
+            function positionTooltip(dot, tooltip) {
+                const rect = dot.getBoundingClientRect();
+                const ttRect = tooltip.getBoundingClientRect();
+                let left = rect.left + window.scrollX + (rect.width / 2) - (ttRect.width / 2);
+                let top = rect.top + window.scrollY - ttRect.height - 25;
+                if (top < window.scrollY + 10) { top = rect.bottom + window.scrollY + 25; }
+                if (left < 10) left = 10;
+                if (left + ttRect.width > window.innerWidth - 10) { left = window.innerWidth - ttRect.width - 10; }
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            }
+        });
+    </script>
+</body>
+</html>
