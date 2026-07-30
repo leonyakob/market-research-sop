@@ -1,0 +1,2 @@
+- Task 7 audit pattern: keep evidence strictly factual with section names, exact bullet references, and explicit PASS/FAIL status.
+- Module mapping checks work best when split into structure, coverage, and boundary behavior evidence.
